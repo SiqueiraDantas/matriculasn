@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Alunos por Oficina</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+
+    h2 {
+      color: #f26729;
+    }
+
+    select {
+      padding: 6px;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: left;
+    }
+
+    th {
+      background-color: #1B4B5F;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Alunos Inscritos por Oficina</h2>
+
+  <label for="filtroOficina">Filtrar por Oficina:</label>
+  <select id="filtroOficina">
+    <option value="">Todas as Oficinas</option>
+  </select>
+
+  <table id="tabelaAlunos">
+    <thead>
+      <tr>
+        <th>Nome do Aluno</th>
+        <th>Oficina</th>
+        <th>Telefone</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAzavu7lRQPAi--SFecOg2FE6f0WlDyTPE",
+      authDomain: "matriculas-madeinsertao.firebaseapp.com",
+      projectId: "matriculas-madeinsertao",
+      storageBucket: "matriculas-madeinsertao.firebasestorage.app",
+      messagingSenderId: "426884127493",
+      appId: "1:426884127493:web:7c83d74f972af209c8b56c",
+      measurementId: "G-V2DH0RHXEE"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let dadosAlunos = [];
+
+    async function carregarAlunos() {
+      const snapshot = await getDocs(collection(db, "matriculas")); // ajuste o nome da coleção se necessário
+
+      const oficinasSet = new Set();
+      dadosAlunos = [];
+
+      if (snapshot.empty) {
+        console.warn("⚠️ Nenhum aluno encontrado na coleção.");
+      }
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const nome = data.nome || 'Sem nome';
+        const oficinas = Array.isArray(data.oficinas) ? data.oficinas : [];
+
+        // ✅ Pega o telefone de dentro do objeto 'responsavel'
+        const telefone = (data.responsavel && data.responsavel.telefone) || 'Não informado';
+
+        dadosAlunos.push({ nome, oficinas, telefone });
+        oficinas.forEach(oficina => oficinasSet.add(oficina));
+      });
+
+      const listaOficinas = Array.from(oficinasSet).sort();
+      preencherSelect(listaOficinas);
+      exibirAlunos();
+    }
+
+    function preencherSelect(oficinas) {
+      const select = document.getElementById("filtroOficina");
+      select.innerHTML = `<option value="">Todas as Oficinas</option>`;
+      oficinas.forEach(oficina => {
+        const option = document.createElement("option");
+        option.value = oficina;
+        option.textContent = oficina;
+        select.appendChild(option);
+      });
+    }
+
+    function exibirAlunos(filtro = "") {
+      const tbody = document.querySelector("#tabelaAlunos tbody");
+      tbody.innerHTML = "";
+
+      const filtrados = filtro
+        ? dadosAlunos.filter(aluno => aluno.oficinas.includes(filtro))
+        : dadosAlunos;
+
+      filtrados.forEach(aluno => {
+        aluno.oficinas.forEach(oficina => {
+          if (!filtro || oficina === filtro) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${aluno.nome}</td>
+              <td>${oficina}</td>
+              <td>${aluno.telefone}</td>
+            `;
+            tbody.appendChild(tr);
+          }
+        });
+      });
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("filtroOficina").addEventListener("change", (e) => {
+        exibirAlunos(e.target.value);
+      });
+      carregarAlunos();
+    });
+  </script>
+
+</body>
+</html>
