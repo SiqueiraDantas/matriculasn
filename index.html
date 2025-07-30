@@ -142,7 +142,10 @@
         ? dadosAlunos.filter(aluno => aluno.oficinas.includes(filtro))
         : dadosAlunos;
 
-      filtrados.forEach(aluno => {
+      // Organiza os dados por nome do aluno em ordem alfabética
+      const alunosOrdenados = [...filtrados].sort((a, b) => a.nome.localeCompare(b.nome));
+
+      alunosOrdenados.forEach(aluno => {
         aluno.oficinas.forEach(oficina => {
           if (!filtro || oficina === filtro) {
             const tr = document.createElement("tr");
